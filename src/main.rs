@@ -1,25 +1,41 @@
-use std::{io::{Read, Write}, net::*, thread};
+use std::time::Duration;
+use std::{
+    io::{Read, Write},
+    net::*,
+    thread, vec,
+};
 
 const BUFFER_SIZE: usize = 32;
 
 fn handle_connection(mut stream: TcpStream) -> std::io::Result<()> {
+    let mut buf = [0u8; BUFFER_SIZE];
+
     loop {
-        let mut received: Vec<u8> = vec![];
-        let mut buf = [0u8; BUFFER_SIZE];
+        println!("Looping.");
 
-        let bytes_read = stream.read(&mut buf)?;
+        match stream.read(&mut buf) {
+            Ok(0) => {
+                thread::sleep(Duration::from_millis(100));
+            }
+            Ok(len) => {
+                let mut received: Vec<u8> = vec![];
+                received.extend_from_slice(&buf[..len]);
 
-        if bytes_read == 0 {
-            break;
+                println!(
+                    "Message: {}",
+                    String::from_utf8(received).expect("Invalid utf-8")
+                );
+
+                stream.write_all(&buf[..len])?;
+            }
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::Interrupted {
+                    println!("{:?}", e.kind());
+                    break;
+                }
+            }
         }
-        
-        received.extend_from_slice(&buf[..bytes_read]);
 
-        let string = String::from_utf8(received).expect("Invalid utf-8");
-
-        println!("Message: {}", string);
-
-        stream.write_all(string.as_bytes())?;
         stream.flush()?;
     }
 
@@ -35,8 +51,10 @@ fn main() -> std::io::Result<()> {
         let (stream, addr) = listener.accept()?;
         println!("Incoming connection from {}", addr);
 
-        thread::spawn(|| {
+        handle_connection(stream);
+
+        /* thread::spawn(|| {
             handle_connection(stream);
-        });
+        }); */
     }
 }

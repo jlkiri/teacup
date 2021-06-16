@@ -1,60 +1,52 @@
-use std::time::Duration;
-use std::{
-    io::{Read, Write},
-    net::*,
-    thread, vec,
-};
+mod client;
+mod server;
 
-const BUFFER_SIZE: usize = 32;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-fn handle_connection(mut stream: TcpStream) -> std::io::Result<()> {
-    let mut buf = [0u8; BUFFER_SIZE];
+use client::Client;
+use server::Server;
+use structopt::StructOpt;
 
-    loop {
-        println!("Looping.");
-
-        match stream.read(&mut buf) {
-            Ok(0) => {
-                thread::sleep(Duration::from_millis(100));
-            }
-            Ok(len) => {
-                let mut received: Vec<u8> = vec![];
-                received.extend_from_slice(&buf[..len]);
-
-                println!(
-                    "Message: {}",
-                    String::from_utf8(received).expect("Invalid utf-8")
-                );
-
-                stream.write_all(&buf[..len])?;
-            }
-            Err(e) => {
-                if e.kind() != std::io::ErrorKind::Interrupted {
-                    println!("{:?}", e.kind());
-                    break;
-                }
-            }
-        }
-
-        stream.flush()?;
-    }
-
-    Ok(())
+#[derive(StructOpt, Debug)]
+#[structopt(name = "rnc")]
+enum Opt {
+  Listen {
+    #[structopt(short, long)]
+    port: Option<u16>,
+  },
+  Connect {
+    #[structopt(short, long)]
+    addr: String,
+  }
 }
 
+
+/// "netcat alternative created with Rust"
+/* struct Opt {
+  #[structopt(short, long)]
+  listen: bool,
+  #[structopt(short, long)]
+  connect: bool,
+  #[structopt(required_if("connect", "true"))]
+  addr: Option<String>,
+  #[structopt(required_if("listen", "true"))]
+  port: Option<u16>,
+} */
+
 fn main() -> std::io::Result<()> {
-    let listener = TcpListener::bind("[::1]:3000")?;
+  let opt = Opt::from_args();
 
-    println!("Listening at {}", listener.local_addr()?);
-
-    loop {
-        let (stream, addr) = listener.accept()?;
-        println!("Incoming connection from {}", addr);
-
-        handle_connection(stream);
-
-        /* thread::spawn(|| {
-            handle_connection(stream);
-        }); */
+  match opt {
+    Opt::Listen { port } => {
+      let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port.unwrap_or(80));
+      let server = Server::new(addr);
+      server.listen()?;
+    },
+    Opt::Connect { addr } => {
+      let client = Client::new(addr);
+      client.connect()?;
     }
+  }
+
+  Ok(())
 }

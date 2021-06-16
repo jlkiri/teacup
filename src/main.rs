@@ -1,6 +1,8 @@
 mod client;
 mod server;
 mod udp;
+mod protocol;
+mod impls;
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
@@ -8,31 +10,7 @@ use client::Client;
 use server::Server;
 use structopt::StructOpt;
 use udp::{UdpClient, UdpServer};
-
-#[derive(Debug)]
-enum Protocol {
-    Tcp,
-    Udp,
-}
-
-impl From<&str> for Protocol {
-    fn from(string: &str) -> Self {
-        match string {
-            "udp" => Self::Udp,
-            "tcp" => Self::Tcp,
-            _ => panic!("Unknown protocol."),
-        }
-    }
-}
-
-impl From<Protocol> for String {
-    fn from(protocol: Protocol) -> String {
-        match protocol {
-            Protocol::Udp => String::from("udp"),
-            Protocol::Tcp => String::from("tcp"),
-        }
-    }
-}
+use protocol::*;
 
 const UDP: &str = "udp";
 const TCP: &str = "tcp";

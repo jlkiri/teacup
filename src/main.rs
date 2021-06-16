@@ -17,16 +17,14 @@ enum Opt {
         port: Option<u16>,
         #[structopt(long)]
         ipv6: bool,
-    },
-    ListenUdp {
         #[structopt(short, long)]
-        port: Option<u16>,
-        #[structopt(long)]
-        ipv6: bool,
+        udp: bool,
     },
     Connect {
         #[structopt(short, long)]
         addr: String,
+        #[structopt(short, long)]
+        udp: bool,
     },
 }
 
@@ -42,19 +40,23 @@ fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
 
     match opt {
-        Opt::Listen { port, ipv6 } => {
+        Opt::Listen { port, ipv6, udp: true } => {
+          let addr = local_addr(port.unwrap_or(8888), ipv6);
+          UdpServer::listen(addr)?
+        },
+        Opt::Listen { port, ipv6, udp: false } => {
             let addr = local_addr(port.unwrap_or(8888), ipv6);
             let server = Server::new(addr);
             server.listen()?
         },
-        Opt::ListenUdp { port, ipv6 } => {
-            let addr = local_addr(port.unwrap_or(8888), ipv6);
-            UdpServer::listen(addr)?
-        }
-        Opt::Connect { addr } => {
+        Opt::Connect { addr, udp: true } => {
             let client = Client::new(addr);
             client.connect()?
-        }
+        },
+        Opt::Connect { addr, udp: false } => {
+          let client = Client::new(addr);
+          client.connect()?
+      }
     }
 
     Ok(())

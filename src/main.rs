@@ -20,18 +20,6 @@ enum Opt {
     },
 }
 
-/// "netcat alternative created with Rust"
-/* struct Opt {
-  #[structopt(short, long)]
-  listen: bool,
-  #[structopt(short, long)]
-  connect: bool,
-  #[structopt(required_if("connect", "true"))]
-  addr: Option<String>,
-  #[structopt(required_if("listen", "true"))]
-  port: Option<u16>,
-} */
-
 fn main() -> std::io::Result<()> {
     let opt = Opt::from_args();
 

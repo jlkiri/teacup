@@ -15,7 +15,7 @@ impl<A: ToSocketAddrs> Server<A> {
     }
 
     pub fn listen(&self) -> std::io::Result<()> {
-        let listener = TcpListener::bind("[::1]:3000")?;
+        let listener = TcpListener::bind(&self.0)?;
 
         println!("Listening at {}", listener.local_addr()?);
 

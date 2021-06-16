@@ -14,13 +14,11 @@ impl<A: ToSocketAddrs> Client<A> {
     }
 
     pub fn connect(&self) -> std::io::Result<()> {
-        let stream = TcpStream::connect("[::1]:3000")?;
+        let stream = TcpStream::connect(&self.0)?;
         self.handle_stream(stream)
     }
 
     fn handle_stream(&self, mut stream: TcpStream) -> std::io::Result<()> {
-        // stream.set_nonblocking(false)?;
-
         loop {
             let mut input = String::new();
             std::io::stdin().read_line(&mut input)?;

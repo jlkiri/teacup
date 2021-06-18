@@ -1,23 +1,22 @@
-mod client;
-mod server;
-mod udp;
-mod protocol;
 mod impls;
+mod protocol;
+mod tcp;
+mod udp;
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use client::Client;
-use server::Server;
-use structopt::StructOpt;
-use udp::{UdpClient, UdpServer};
 use protocol::*;
+use structopt::StructOpt;
+use tcp::client::TcpClient;
+use tcp::server::TcpServer;
+use udp::client::UdpClient;
+use udp::server::UdpServer;
 
 const UDP: &str = "udp";
 const TCP: &str = "tcp";
 
 #[derive(StructOpt, Debug)]
 struct ClientOptions {
-    #[structopt(short, long)]
     addr: String,
     #[structopt(short, long, default_value = TCP, parse(from_str))]
     protocol: Protocol,
@@ -61,7 +60,7 @@ fn main() -> std::io::Result<()> {
         }) => match protocol {
             Protocol::Tcp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
-                let server = Server::new(addr);
+                let server = TcpServer::new(addr);
                 server.listen()?
             }
             Protocol::Udp => {
@@ -75,7 +74,7 @@ fn main() -> std::io::Result<()> {
             data,
         }) => match protocol {
             Protocol::Tcp => {
-                let client = Client::new(addr);
+                let client = TcpClient::new(addr);
                 client.connect()?
             }
             Protocol::Udp => {

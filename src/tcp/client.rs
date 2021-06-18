@@ -6,9 +6,9 @@ use std::{
 
 const BUFFER_SIZE: usize = 32;
 
-pub struct Client<A: ToSocketAddrs>(A);
+pub struct TcpClient<A: ToSocketAddrs>(A);
 
-impl<A: ToSocketAddrs> Client<A> {
+impl<A: ToSocketAddrs> TcpClient<A> {
     pub fn new(addr: A) -> Self {
         Self(addr)
     }

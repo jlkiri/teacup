@@ -42,9 +42,9 @@ fn handle_connection(mut stream: TcpStream) -> std::io::Result<()> {
     Ok(())
 }
 
-pub struct Server<A: ToSocketAddrs>(A);
+pub struct TcpServer<A: ToSocketAddrs>(A);
 
-impl<A: ToSocketAddrs> Server<A> {
+impl<A: ToSocketAddrs> TcpServer<A> {
     pub fn new(addr: A) -> Self {
         Self(addr)
     }

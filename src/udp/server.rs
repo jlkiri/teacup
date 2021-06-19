@@ -8,7 +8,7 @@ fn handle_connection(socket: UdpSocket) -> std::io::Result<()> {
     let (len, addr) = socket.recv_from(&mut buf)?;
 
     println!("Received a UDP packet from {}", addr);
-    println!("Content: {}", String::from_utf8_lossy(&buf[..len]));
+    println!("Message: {}", String::from_utf8_lossy(&buf[..len]));
 
     Ok(())
 }

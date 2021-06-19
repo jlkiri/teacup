@@ -37,7 +37,7 @@ impl<A: ToSocketAddrs> TcpClient<A> {
                     received.extend_from_slice(&buf[..len]);
                     println!(
                         "Received message: {}",
-                        String::from_utf8(received).expect("Invalid utf-8")
+                        String::from_utf8(received).expect("Received invalid utf-8.")
                     );
                 }
                 Err(..) => {}

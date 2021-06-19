@@ -1,67 +1,33 @@
-use std::{
-    io::{Read, Write},
-    net::*,
-    thread, vec,
-};
+use std::{net::*, thread};
 
-const BUFFER_SIZE: usize = 32;
+type IoResult<T> = std::io::Result<T>;
 
-fn handle_connection(mut stream: TcpStream) -> std::io::Result<()> {
-    let mut buf = [0u8; BUFFER_SIZE];
+pub trait RequestHandler: FnMut(&mut TcpStream) -> IoResult<()> {}
+impl<T> RequestHandler for T where T: FnMut(&mut TcpStream) -> IoResult<()> {}
 
-    loop {
-        println!("Looping.");
-
-        match stream.read(&mut buf) {
-            Ok(0) => {
-                // thread::sleep(Duration::from_millis(100));
-                break;
-            }
-            Ok(len) => {
-                let mut received: Vec<u8> = vec![];
-                received.extend_from_slice(&buf[..len]);
-
-                println!(
-                    "Message: {}",
-                    String::from_utf8(received).expect("Invalid utf-8")
-                );
-
-                stream.write_all(&buf[..len])?;
-            }
-            Err(e) => {
-                if e.kind() != std::io::ErrorKind::Interrupted {
-                    println!("{:?}", e.kind());
-                    break;
-                }
-            }
-        }
-
-        stream.flush()?;
-    }
-
-    Ok(())
+pub struct TcpServer<A: ToSocketAddrs> {
+    addr: A,
 }
 
-pub struct TcpServer<A: ToSocketAddrs>(A);
-
 impl<A: ToSocketAddrs> TcpServer<A> {
-    pub fn new(addr: A) -> Self {
-        Self(addr)
+    pub fn bind(addr: A) -> Self {
+        Self { addr }
     }
 
-    pub fn listen(&self) -> std::io::Result<()> {
-        let listener = TcpListener::bind(&self.0)?;
+    pub fn listen<F: RequestHandler + Send + Copy + 'static>(
+        &self,
+        mut handler: F,
+    ) -> std::io::Result<()> {
+        let listener = TcpListener::bind(&self.addr)?;
 
-        println!("Listening at {}", listener.local_addr()?);
+        println!("TCP server is listening at {}", listener.local_addr()?);
 
         loop {
-            let (stream, addr) = listener.accept()?;
+            let (mut stream, addr) = listener.accept()?;
             println!("Incoming connection from {}", addr);
 
-            // self.handle_connection(stream);
-
-            thread::spawn(|| {
-                handle_connection(stream);
+            thread::spawn(move || {
+                handler(&mut stream).expect("Failed to handle connection.");
             });
         }
     }

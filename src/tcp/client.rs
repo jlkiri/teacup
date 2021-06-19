@@ -45,7 +45,6 @@ impl<A: ToSocketAddrs> TcpClient<A> {
                     }
                     Err(e) => {
                         if e.kind() != std::io::ErrorKind::Interrupted {
-                            println!("ERR: {:?}", e.kind());
                             break;
                         }
                     }

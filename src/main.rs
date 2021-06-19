@@ -1,10 +1,13 @@
+mod examples;
 mod impls;
 mod protocol;
 mod tcp;
 mod udp;
 
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::io::{Read, Write};
+use std::net::{SocketAddr, TcpStream};
 
+use examples::echo;
 use protocol::*;
 use structopt::StructOpt;
 use tcp::client::TcpClient;
@@ -35,18 +38,54 @@ struct ServerOptions {
 }
 
 #[derive(StructOpt, Debug)]
+enum Examples {
+    Echo,
+}
+
+#[derive(StructOpt, Debug)]
 #[structopt(name = "teacup")]
 enum Teacup {
     Listen(ServerOptions),
     Connect(ClientOptions),
+    Example(Examples),
 }
 
 fn local_addr(port: u16, ipv6: bool) -> SocketAddr {
     if ipv6 {
-        return SocketAddr::new(IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)), port);
+        return SocketAddr::from(([0, 0, 0, 0, 0, 0, 0, 1], port));
     }
 
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port)
+    SocketAddr::from(([127, 0, 0, 1], port))
+}
+
+fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
+    let mut buf = [0u8; 32];
+
+    loop {
+        match stream.read(&mut buf) {
+            Ok(0) => {
+                break;
+            }
+            Ok(len) => {
+                let mut received: Vec<u8> = vec![];
+                received.extend_from_slice(&buf[..len]);
+
+                println!(
+                    "Received message: {}",
+                    String::from_utf8(received).expect("Invalid utf-8")
+                );
+            }
+            Err(e) => {
+                if e.kind() != std::io::ErrorKind::Interrupted {
+                    break;
+                }
+            }
+        }
+
+        stream.flush()?;
+    }
+
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -60,8 +99,8 @@ fn main() -> std::io::Result<()> {
         }) => match protocol {
             Protocol::Tcp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
-                let server = TcpServer::new(addr);
-                server.listen()?
+                let server = TcpServer::bind(addr);
+                server.listen(handle_connection)?
             }
             Protocol::Udp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
@@ -80,6 +119,9 @@ fn main() -> std::io::Result<()> {
             Protocol::Udp => {
                 UdpClient::send(addr, data.unwrap_or("Hello!".into()));
             }
+        },
+        Teacup::Example(ex) => match ex {
+            Examples::Echo => echo::run_example()?,
         },
     }
 

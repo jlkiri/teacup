@@ -14,10 +14,7 @@ impl<A: ToSocketAddrs> TcpServer<A> {
         Self { addr }
     }
 
-    pub fn listen<F: RequestHandler + Send + Copy + 'static>(
-        &self,
-        handler: F,
-    ) -> IoResult<()> {
+    pub fn listen<F: RequestHandler + Send + Copy + 'static>(&self, handler: F) -> IoResult<()> {
         let listener = TcpListener::bind(&self.addr)?;
 
         println!("TCP server is listening at {}", listener.local_addr()?);

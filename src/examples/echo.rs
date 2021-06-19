@@ -23,7 +23,7 @@ pub fn run_example() -> std::io::Result<()> {
                         "Received message: {}",
                         String::from_utf8(received).expect("Received invalid utf-8.")
                     );
-                    
+
                     stream.write_all(&buf[..len])?;
                 }
                 Err(e) => {

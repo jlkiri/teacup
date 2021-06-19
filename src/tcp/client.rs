@@ -4,8 +4,6 @@ use std::{
     time::Duration,
 };
 
-const BUFFER_SIZE: usize = 32;
-
 pub struct TcpClient<A: ToSocketAddrs>(A);
 
 impl<A: ToSocketAddrs> TcpClient<A> {
@@ -26,32 +24,28 @@ impl<A: ToSocketAddrs> TcpClient<A> {
             stream.write_all(input.as_bytes())?;
             stream.flush()?;
 
-            let mut buf = [0u8; BUFFER_SIZE];
+            let mut buf = Vec::new();
 
             stream
                 .set_read_timeout(Some(Duration::from_millis(100)))
                 .unwrap();
 
-            loop {
-                match stream.read(&mut buf) {
-                    Ok(0) => break,
-                    Ok(len) => {
-                        let mut received: Vec<u8> = vec![];
-                        received.extend_from_slice(&buf[..len]);
-                        println!(
-                            "Server response: {}",
-                            String::from_utf8(received).expect("Invalid utf-8")
-                        );
-                    }
-                    Err(e) => {
-                        if e.kind() != std::io::ErrorKind::Interrupted {
-                            break;
-                        }
-                    }
+            match stream.read_to_end(&mut buf) {
+                Ok(0) => break,
+                Ok(len) => {
+                    let mut received = vec![];
+                    received.extend_from_slice(&buf[..len]);
+                    println!(
+                        "Received message: {}",
+                        String::from_utf8(received).expect("Invalid utf-8")
+                    );
                 }
+                Err(..) => {}
             }
 
             stream.flush()?;
         }
+
+        Ok(())
     }
 }

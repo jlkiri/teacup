@@ -18,7 +18,7 @@ impl TcpServer {
         println!("TCP server is listening at {}", self.listener.local_addr()?);
 
         loop {
-            let (mut stream, addr) = self.listener.accept()?;
+            let (stream, addr) = self.listener.accept()?;
             println!("Incoming connection from {}", addr);
 
             thread::spawn(move || {

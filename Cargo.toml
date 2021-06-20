@@ -1,8 +1,15 @@
 [package]
 name = "teacup"
 version = "0.1.0"
-authors = ["Kirill Vasiltsov"]
+authors = ["Kirill Vasiltsov <interalia.dev@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "A simple `netcat`-like TCP/UDP listener and client."
+readme = "README.md"
+homepage = "https://github.com/jlkiri/teacup"
+repository = "https://github.com/jlkiri/teacup"
+keywords = ["cli", "tcp", "server", "netcat"]
+categories = ["command-line-utilities", "network-programming"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

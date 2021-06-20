@@ -1,6 +1,6 @@
 # TeaCuP ☕ 
 
-A simple `netcat`-like TCP/UDP listener and client.
+A simple cross-platform `netcat`-like TCP/UDP listener and client.
 
 ## Server
 

@@ -1,43 +1,15 @@
 use crate::tcp::server::TcpServer;
-use std::{
-    io::{Read, Write},
-    net::*,
-};
+use std::io::Result;
+use std::net::*;
 
-const BUFFER_SIZE: usize = 32;
+fn echo(mut stream: TcpStream) -> Result<()> {
+    let mut w = stream.try_clone()?;
+    std::io::copy(&mut stream, &mut w)?;
+    Ok(())
+}
 
 pub fn run_example() -> std::io::Result<()> {
     let server = TcpServer::bind(("127.0.0.1", 8888));
-
-    server.listen(|mut stream: TcpStream| {
-        let mut buf = [0u8; BUFFER_SIZE];
-
-        loop {
-            match stream.read(&mut buf) {
-                Ok(0) => break,
-                Ok(len) => {
-                    let mut received: Vec<u8> = vec![];
-                    received.extend_from_slice(&buf[..len]);
-
-                    println!(
-                        "Received message: {}",
-                        String::from_utf8(received).expect("Received invalid utf-8.")
-                    );
-
-                    stream.write_all(&buf[..len])?;
-                }
-                Err(e) => {
-                    if e.kind() != std::io::ErrorKind::Interrupted {
-                        break;
-                    }
-                }
-            }
-
-            stream.flush()?;
-        }
-
-        Ok(())
-    })?;
-
+    server.listen(echo)?;
     Ok(())
 }

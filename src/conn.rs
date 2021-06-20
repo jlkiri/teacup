@@ -24,12 +24,10 @@ fn read_to_stdout(mut r: TcpStream) -> JoinHandle<()> {
                     String::from_utf8_lossy(&buf)
                 );
             }
-            Err(e) => {
-                match e.kind() {
-                    ErrorKind::Interrupted | ErrorKind::WouldBlock => continue,
-                    _ => panic!("{}", e),
-                }
-            }
+            Err(e) => match e.kind() {
+                ErrorKind::Interrupted | ErrorKind::WouldBlock => continue,
+                _ => panic!("{}", e),
+            },
         }
     })
 }

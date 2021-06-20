@@ -1,11 +1,11 @@
-mod connection;
+mod conn;
 mod examples;
 mod protocol;
 mod tcp;
 mod udp;
 
 use std::io::Result;
-use std::net::{SocketAddr};
+use std::net::SocketAddr;
 
 use examples::echo;
 use protocol::*;
@@ -70,7 +70,7 @@ fn main() -> Result<()> {
             Protocol::Tcp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
                 let server = TcpServer::bind(addr);
-                server.listen(connection::handle_connection)?
+                server.listen(conn::handle_connection)?;
             }
             Protocol::Udp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);

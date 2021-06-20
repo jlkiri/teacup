@@ -21,9 +21,7 @@ impl TcpServer {
             let (stream, addr) = self.listener.accept()?;
             println!("Incoming connection from {}", addr);
 
-            thread::spawn(move || {
-                handler(stream).expect("Failed to handle connection.");
-            });
+            thread::spawn(move || handler(stream));
         }
     }
 }

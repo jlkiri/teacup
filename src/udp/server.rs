@@ -2,22 +2,26 @@ use std::net::*;
 
 const BUFFER_SIZE: usize = 32;
 
-fn handle_connection(socket: UdpSocket) -> std::io::Result<()> {
+fn handle_connection(socket: UdpSocket) {
     let mut buf = [0u8; BUFFER_SIZE];
 
-    let (len, addr) = socket.recv_from(&mut buf)?;
+    let (len, addr) = socket
+        .recv_from(&mut buf)
+        .expect("Failed to receive a UDP message.");
 
-    println!("Received a UDP packet from {}", addr);
+    println!("Received {} bytes from {}", len, addr);
     println!("Message: {}", String::from_utf8_lossy(&buf[..len]));
-
-    Ok(())
 }
 
 pub struct UdpServer;
 
 impl UdpServer {
-    pub fn listen<A: ToSocketAddrs>(addr: A) -> std::io::Result<()> {
-        let socket = UdpSocket::bind(addr)?;
+    pub fn listen<A: ToSocketAddrs>(addr: A) {
+        let socket = UdpSocket::bind(addr).expect("Failed to bind UDP socket to address.");
+        println!(
+            "UDP socket is listening at {}",
+            socket.local_addr().unwrap()
+        );
         handle_connection(socket)
     }
 }

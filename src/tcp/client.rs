@@ -1,51 +1,48 @@
+use std::io::Result;
 use std::{
     io::{Read, Write},
     net::{TcpStream, ToSocketAddrs},
     time::Duration,
 };
 
-pub struct TcpClient<A: ToSocketAddrs>(A);
+pub struct TcpClient;
 
-impl<A: ToSocketAddrs> TcpClient<A> {
-    pub fn new(addr: A) -> Self {
-        Self(addr)
-    }
+fn handle_connection(stream: &mut TcpStream) -> Result<()> {
+    loop {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
 
-    pub fn connect(&self) -> std::io::Result<()> {
-        let stream = TcpStream::connect(&self.0)?;
-        self.handle_stream(stream)
-    }
+        stream.write_all(input.as_bytes())?;
+        stream.flush()?;
 
-    fn handle_stream(&self, mut stream: TcpStream) -> std::io::Result<()> {
-        loop {
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input)?;
+        let mut buf = Vec::new();
 
-            stream.write_all(input.as_bytes())?;
-            stream.flush()?;
+        stream
+            .set_read_timeout(Some(Duration::from_millis(100)))
+            .unwrap();
 
-            let mut buf = Vec::new();
-
-            stream
-                .set_read_timeout(Some(Duration::from_millis(100)))
-                .unwrap();
-
-            match stream.read_to_end(&mut buf) {
-                Ok(0) => break,
-                Ok(len) => {
-                    let mut received = vec![];
-                    received.extend_from_slice(&buf[..len]);
-                    println!(
-                        "Received message: {}",
-                        String::from_utf8(received).expect("Received invalid utf-8.")
-                    );
-                }
-                Err(..) => {}
+        match stream.read_to_end(&mut buf) {
+            Ok(0) => break,
+            Ok(len) => {
+                println!(
+                    "Received {} bytes from {}: {}",
+                    len,
+                    stream.peer_addr().unwrap(),
+                    String::from_utf8(buf).expect("Received invalid utf-8.")
+                );
             }
-
-            stream.flush()?;
+            Err(..) => {}
         }
 
-        Ok(())
+        stream.flush()?;
+    }
+
+    Ok(())
+}
+
+impl TcpClient {
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<()> {
+        let mut stream = TcpStream::connect(addr)?;
+        handle_connection(&mut stream)
     }
 }

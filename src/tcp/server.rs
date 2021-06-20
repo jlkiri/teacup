@@ -1,26 +1,24 @@
+use std::io::Result;
 use std::{net::*, thread};
 
-type IoResult<T> = std::io::Result<T>;
+pub trait RequestHandler: FnOnce(&mut TcpStream) -> Result<()> {}
+impl<T> RequestHandler for T where T: FnOnce(&mut TcpStream) -> Result<()> {}
 
-pub trait RequestHandler: FnOnce(&mut TcpStream) -> IoResult<()> {}
-impl<T> RequestHandler for T where T: FnOnce(&mut TcpStream) -> IoResult<()> {}
-
-pub struct TcpServer<A: ToSocketAddrs> {
-    addr: A,
+pub struct TcpServer {
+    listener: TcpListener,
 }
 
-impl<A: ToSocketAddrs> TcpServer<A> {
-    pub fn bind(addr: A) -> Self {
-        Self { addr }
+impl TcpServer {
+    pub fn bind<A: ToSocketAddrs>(addr: A) -> Self {
+        let listener = TcpListener::bind(addr).expect("Failed to bind a TCP socket to address.");
+        Self { listener }
     }
 
-    pub fn listen<F: RequestHandler + Send + Copy + 'static>(&self, handler: F) -> IoResult<()> {
-        let listener = TcpListener::bind(&self.addr)?;
-
-        println!("TCP server is listening at {}", listener.local_addr()?);
+    pub fn listen<F: RequestHandler + Send + Copy + 'static>(&self, handler: F) -> Result<()> {
+        println!("TCP server is listening at {}", self.listener.local_addr()?);
 
         loop {
-            let (mut stream, addr) = listener.accept()?;
+            let (mut stream, addr) = self.listener.accept()?;
             println!("Incoming connection from {}", addr);
 
             thread::spawn(move || {

@@ -1,9 +1,9 @@
 mod examples;
-mod impls;
 mod protocol;
 mod tcp;
 mod udp;
 
+use std::io::Result;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream};
 
@@ -58,7 +58,7 @@ fn local_addr(port: u16, ipv6: bool) -> SocketAddr {
     SocketAddr::from(([127, 0, 0, 1], port))
 }
 
-fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
+fn handle_connection(stream: &mut TcpStream) -> Result<()> {
     let mut buf = [0u8; 32];
 
     loop {
@@ -88,7 +88,7 @@ fn handle_connection(stream: &mut TcpStream) -> std::io::Result<()> {
     Ok(())
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> Result<()> {
     let opt = Teacup::from_args();
 
     match opt {
@@ -104,7 +104,7 @@ fn main() -> std::io::Result<()> {
             }
             Protocol::Udp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
-                UdpServer::listen(addr)?
+                UdpServer::listen(addr)
             }
         },
         Teacup::Connect(ClientOptions {
@@ -113,11 +113,10 @@ fn main() -> std::io::Result<()> {
             data,
         }) => match protocol {
             Protocol::Tcp => {
-                let client = TcpClient::new(addr);
-                client.connect()?
+                TcpClient::connect(addr)?
             }
             Protocol::Udp => {
-                UdpClient::send(addr, data.unwrap_or("Hello!".into()));
+                UdpClient::send(addr, data.unwrap_or("Hello!".into()))
             }
         },
         Teacup::Example(ex) => match ex {

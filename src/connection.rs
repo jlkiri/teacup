@@ -25,7 +25,6 @@ fn read_to_stdout(mut r: TcpStream) -> JoinHandle<()> {
                 );
             }
             Err(e) => {
-                println!("Err.");
                 match e.kind() {
                     ErrorKind::Interrupted | ErrorKind::WouldBlock => continue,
                     _ => panic!("{}", e),

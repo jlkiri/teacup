@@ -1,24 +1,23 @@
-use crate::connection;
-use std::io::ErrorKind;
-use std::io::Result;
+use std::io::{ErrorKind, Read, Result, Write};
+use std::net::TcpStream;
 use std::sync::mpsc;
 use std::thread;
-use std::{
-    io::{Read, Write},
-    net::{TcpStream, ToSocketAddrs},
-};
 
-pub struct TcpClient;
-
-/* fn handle_connection(stream: &mut TcpStream) -> Result<()> {
+pub fn handle_connection(stream: &mut TcpStream) -> Result<()> {
     let (tx, rx) = mpsc::channel::<String>();
+    let peer_addr = stream.peer_addr()?;
 
     stream.set_nonblocking(true)?;
 
     thread::spawn(move || loop {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
-        tx.send(input).unwrap();
+        match tx.send(input) {
+            Err(..) => {
+                 println!("Failed to send a message. Probably lost connection with {}.", peer_addr);
+            },
+            _ => ()
+        }
     });
 
     let mut buf = [0u8; 128];
@@ -43,21 +42,13 @@ pub struct TcpClient;
                 );
             }
             Err(e) => {
-                if e.kind() != ErrorKind::Interrupted {
-                    return Err(e);
+                match e.kind() {
+                    ErrorKind::Interrupted | ErrorKind::WouldBlock => continue,
+                    _ => return Err(e)
                 }
             }
         }
-
-        stream.flush()?;
     }
 
     Ok(())
-} */
-
-impl TcpClient {
-    pub fn connect<A: ToSocketAddrs>(addr: A) -> Result<()> {
-        let mut stream = TcpStream::connect(addr)?;
-        connection::handle_connection(&mut stream)
-    }
 }

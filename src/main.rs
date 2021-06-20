@@ -1,3 +1,4 @@
+mod connection;
 mod examples;
 mod protocol;
 mod tcp;
@@ -6,6 +7,8 @@ mod udp;
 use std::io::Result;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream};
+use std::sync::mpsc;
+use std::thread;
 
 use examples::echo;
 use protocol::*;
@@ -58,12 +61,30 @@ fn local_addr(port: u16, ipv6: bool) -> SocketAddr {
     SocketAddr::from(([127, 0, 0, 1], port))
 }
 
-fn handle_connection(stream: &mut TcpStream) -> Result<()> {
+/* fn handle_connection(stream: &mut TcpStream) -> Result<()> {
     let mut buf = [0u8; 32];
+    let (tx, rx) = mpsc::channel::<String>();
+
+    stream.set_nonblocking(true)?;
+
+    thread::spawn(move || loop {
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input).unwrap();
+        tx.send(input).unwrap();
+    });
 
     loop {
+        match rx.try_recv() {
+            Ok(msg) => {
+                stream.write_all(msg.as_bytes())?;
+                stream.flush()?;
+            }
+            Err(..) => (),
+        }
+
         match stream.read(&mut buf) {
             Ok(0) => {
+                println!("Zero.");
                 break;
             }
             Ok(len) => {
@@ -76,9 +97,11 @@ fn handle_connection(stream: &mut TcpStream) -> Result<()> {
                 );
             }
             Err(e) => {
-                if e.kind() != std::io::ErrorKind::Interrupted {
+                /* if e.kind() != std::io::ErrorKind::Interrupted {
+                    println!("{}", e);
                     break;
-                }
+                } */
+                continue;
             }
         }
 
@@ -86,7 +109,7 @@ fn handle_connection(stream: &mut TcpStream) -> Result<()> {
     }
 
     Ok(())
-}
+} */
 
 fn main() -> Result<()> {
     let opt = Teacup::from_args();
@@ -100,7 +123,7 @@ fn main() -> Result<()> {
             Protocol::Tcp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
                 let server = TcpServer::bind(addr);
-                server.listen(handle_connection)?
+                server.listen(connection::handle_connection)?
             }
             Protocol::Udp => {
                 let addr = local_addr(port.unwrap_or(8888), ipv6);
@@ -112,12 +135,8 @@ fn main() -> Result<()> {
             protocol,
             data,
         }) => match protocol {
-            Protocol::Tcp => {
-                TcpClient::connect(addr)?
-            }
-            Protocol::Udp => {
-                UdpClient::send(addr, data.unwrap_or("Hello!".into()))
-            }
+            Protocol::Tcp => TcpClient::connect(addr)?,
+            Protocol::Udp => UdpClient::send(addr, data.unwrap_or("Hello!".into())),
         },
         Teacup::Example(ex) => match ex {
             Examples::Echo => echo::run_example()?,

@@ -1,8 +1,8 @@
 use std::io::Result;
 use std::{net::*, thread};
 
-pub trait RequestHandler: FnOnce(&mut TcpStream) -> Result<()> {}
-impl<T> RequestHandler for T where T: FnOnce(&mut TcpStream) -> Result<()> {}
+pub trait RequestHandler: FnOnce(TcpStream) -> Result<()> {}
+impl<T> RequestHandler for T where T: FnOnce(TcpStream) -> Result<()> {}
 
 pub struct TcpServer {
     listener: TcpListener,
@@ -22,7 +22,7 @@ impl TcpServer {
             println!("Incoming connection from {}", addr);
 
             thread::spawn(move || {
-                handler(&mut stream).expect("Failed to handle connection.");
+                handler(stream).expect("Failed to handle connection.");
             });
         }
     }

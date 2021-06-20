@@ -1,43 +1,31 @@
 use std::io::{ErrorKind, Read, Result, Write};
 use std::net::TcpStream;
-use std::sync::mpsc;
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
-pub fn handle_connection(stream: &mut TcpStream) -> Result<()> {
-    let (tx, rx) = mpsc::channel::<String>();
-    let peer_addr = stream.peer_addr()?;
-
-    stream.set_nonblocking(true)?;
-
+fn read_stdin(stream: Arc<Mutex<TcpStream>>) {
+    // let copystream = Arc::clone(&stream);
     thread::spawn(move || loop {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
-        match tx.send(input) {
-            Err(..) => {
-                 println!("Failed to send a message. Probably lost connection with {}.", peer_addr);
-            },
-            _ => ()
-        }
+        let mut w = stream.lock().unwrap();
+        w.write_all(input.as_bytes()).unwrap();
+        w.flush().unwrap();
     });
+}
 
+fn write_stdout(stream: Arc<Mutex<TcpStream>>) -> Result<()> {
     let mut buf = [0u8; 128];
 
     loop {
-        match rx.try_recv() {
-            Ok(msg) => {
-                stream.write_all(msg.as_bytes())?;
-                stream.flush()?;
-            }
-            Err(..) => (),
-        }
-
-        match stream.read(&mut buf) {
+        let mut r = stream.lock().unwrap();
+        match r.read(&mut buf) {
             Ok(0) => break,
             Ok(len) => {
                 println!(
                     "Received {} bytes from {}: {}",
                     len,
-                    stream.peer_addr().unwrap(),
+                    r.peer_addr().unwrap(),
                     String::from_utf8_lossy(&buf)
                 );
             }
@@ -49,6 +37,20 @@ pub fn handle_connection(stream: &mut TcpStream) -> Result<()> {
             }
         }
     }
+
+    Ok(())
+}
+
+pub fn handle_connection(strm: TcpStream) -> Result<()> {
+    let (tx, rx) = mpsc::channel::<String>();
+    let peer_addr = strm.peer_addr()?;
+
+    let stream = Arc::new(Mutex::new(strm));
+
+    stream.lock().unwrap().set_nonblocking(true)?;
+
+    read_stdin(Arc::clone(&stream));
+    write_stdout(Arc::clone(&stream));
 
     Ok(())
 }

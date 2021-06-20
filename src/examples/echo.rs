@@ -9,7 +9,7 @@ const BUFFER_SIZE: usize = 32;
 pub fn run_example() -> std::io::Result<()> {
     let server = TcpServer::bind(("127.0.0.1", 8888));
 
-    server.listen(|stream: &mut TcpStream| {
+    server.listen(|mut stream: TcpStream| {
         let mut buf = [0u8; BUFFER_SIZE];
 
         loop {

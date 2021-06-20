@@ -20,33 +20,43 @@ const TCP: &str = "tcp";
 
 #[derive(StructOpt, Debug)]
 struct ClientOptions {
+    /// Remote address to connect to.
     addr: String,
     #[structopt(short, long, default_value = TCP, parse(from_str))]
+    /// Protocol: TCP or UDP.
     protocol: Protocol,
+    /// Optionally send data on connection.
     #[structopt(short, long, required_if("protocol", UDP))]
     data: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]
 struct ServerOptions {
+    /// Port to listen on.
     #[structopt(short, long)]
     port: Option<u16>,
     #[structopt(long)]
+    /// Tell the server to use IPv6.
     ipv6: bool,
+    /// Protocol: TCP or UDP.
     #[structopt(long, default_value = TCP, parse(from_str))]
     protocol: Protocol,
 }
 
 #[derive(StructOpt, Debug)]
 enum Examples {
+    // A simple echo server.
     Echo,
 }
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "teacup")]
 enum Teacup {
+    /// Use as a server.
     Listen(ServerOptions),
+    /// Use as a client.
     Connect(ClientOptions),
+    /// Launch an example (e.g. echo server).
     Example(Examples),
 }
 
